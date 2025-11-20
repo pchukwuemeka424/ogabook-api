@@ -18,6 +18,7 @@ A comprehensive admin panel for managing your Supabase database with Node.js and
 npm install
 ```
 
+<<<<<<< HEAD
 2. Create a `.env` file in the root directory:
 ```env
 # Supabase Configuration
@@ -39,6 +40,9 @@ ADMIN_PASSWORD=your_secure_password
 PORT=3000
 NODE_ENV=development
 ```
+=======
+
+>>>>>>> 9a6d16615356cec2994ac0663b5ebb765cbb655a
 
 3. Start the server:
 ```bash
