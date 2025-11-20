@@ -1,0 +1,370 @@
+<%- include('partials/header', { title: 'Delete Account - OgaBook' }) %>
+
+<style>
+    .delete-account-container {
+        min-height: 100vh;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .delete-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 700px;
+        width: 100%;
+        overflow: hidden;
+    }
+    .delete-header {
+        background: #ef4444;
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    .logo-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+    .logo-wrapper img {
+        max-width: 120px;
+        max-height: 120px;
+        height: auto;
+        width: auto;
+        object-fit: contain;
+    }
+    .app-name {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+    }
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    .delete-body {
+        padding: 30px;
+    }
+    .instructions-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .instructions-box h5 {
+        color: #92400e;
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .instructions-box ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #78350f;
+    }
+    .instructions-box li {
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+    .warning-box {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .warning-box h5 {
+        color: #991b1b;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .warning-box p {
+        color: #7f1d1d;
+        margin: 0;
+        line-height: 1.6;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e5e7eb;
+        padding: 12px 16px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    .form-control:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    .delete-button {
+        background: #ef4444;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 32px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    .delete-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        background: #dc2626;
+    }
+    .delete-button:active {
+        transform: translateY(0);
+    }
+    .delete-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .delete-button i {
+        margin-right: 10px;
+    }
+    .back-link {
+        text-align: center;
+        margin-top: 20px;
+    }
+    .back-link a {
+        color: #ef4444;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+    .back-link a:hover {
+        color: #dc2626;
+        text-decoration: underline;
+    }
+</style>
+
+<div class="delete-account-container">
+    <div class="delete-card">
+        <div class="delete-header">
+            <div class="logo-wrapper">
+                <img src="/assets/logo.png" alt="OgaBook Logo">
+            </div>
+            <div class="app-name">OgaBook</div>
+            <h1 class="delete-title">Delete Account</h1>
+        </div>
+        
+        <div class="delete-body">
+            <div class="warning-box">
+                <h5>
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Important Warning
+                </h5>
+                <p>
+                    <strong>This action cannot be undone.</strong> Once you delete your account, all your data including:
+                    subscriptions, business information, and account settings will be permanently deleted from our system.
+                    Please make sure you want to proceed before continuing.
+                </p>
+            </div>
+            
+            <form id="deleteAccountForm">
+                <div class="mb-4">
+                    <label for="email" class="form-label">
+                        <i class="bi bi-envelope me-2"></i>Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        class="form-control" 
+                        id="email" 
+                        placeholder="Enter your email address" 
+                        required 
+                        autocomplete="email"
+                    >
+                </div>
+                
+                <button type="submit" class="delete-button" id="deleteButton">
+                    <i class="bi bi-trash3"></i>
+                    <span>Delete My Account</span>
+                </button>
+            </form>
+            
+            <div class="instructions-box">
+                <h5>
+                    <i class="bi bi-info-circle"></i>
+                    Instructions
+                </h5>
+                <ul>
+                    <li>Enter the email address associated with your OgaBook account</li>
+                    <li>Click the "Delete My Account" button above</li>
+                    <li>Confirm the deletion when prompted</li>
+                    <li>Your account and all associated data will be permanently removed</li>
+                </ul>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger d-none mt-3" role="alert">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                <span></span>
+            </div>
+            <div id="successMessage" class="alert alert-success d-none mt-3" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                <span></span>
+            </div>
+            
+            <div class="back-link">
+                <a href="/login">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast-alert');
+        existingToasts.forEach(toast => toast.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed top-0 end-0 m-3 toast-alert`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // Show error message in form
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        const successDiv = document.getElementById('successMessage');
+        const errorSpan = errorDiv.querySelector('span');
+        if (errorSpan) {
+            errorSpan.textContent = message;
+        } else {
+            errorDiv.textContent = message;
+        }
+        errorDiv.classList.remove('d-none');
+        successDiv.classList.add('d-none');
+        setTimeout(() => {
+            errorDiv.classList.add('d-none');
+        }, 5000);
+    }
+
+    // Show success message in form
+    function showSuccess(message) {
+        const successDiv = document.getElementById('successMessage');
+        const errorDiv = document.getElementById('errorMessage');
+        const successSpan = successDiv.querySelector('span');
+        if (successSpan) {
+            successSpan.textContent = message;
+        } else {
+            successDiv.textContent = message;
+        }
+        successDiv.classList.remove('d-none');
+        errorDiv.classList.add('d-none');
+    }
+
+    // Delete account function
+    async function deleteAccount(email) {
+        try {
+            const response = await fetch('/api/auth/delete-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email })
+            });
+
+            // Check if response is JSON
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                throw new Error('Server returned invalid response. Please try again.');
+            }
+
+            if (!response.ok) {
+                const errorMsg = data.message || data.error || `Request failed (${response.status})`;
+                throw new Error(errorMsg);
+            }
+
+            if (data.success) {
+                return data;
+            } else {
+                throw new Error(data.message || 'Account deletion failed');
+            }
+        } catch (error) {
+            console.error('Delete account error:', error);
+            // Handle network errors
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Cannot connect to server. Please check if the server is running.');
+            }
+            throw error;
+        }
+    }
+
+    // Form submission handler
+    document.getElementById('deleteAccountForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const submitBtn = document.getElementById('deleteButton');
+        
+        if (!email) {
+            showError('Please enter your email address');
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showError('Please enter a valid email address');
+            return;
+        }
+
+        // Confirm deletion
+        const confirmed = confirm('Are you sure you want to delete your OgaBook account? This action cannot be undone.');
+        if (!confirmed) {
+            return;
+        }
+
+        submitBtn.disabled = true;
+        const buttonSpan = submitBtn.querySelector('span');
+        const originalHTML = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span><span>Deleting account...</span>';
+
+        try {
+            await deleteAccount(email);
+            showSuccess('Your OgaBook account has been deleted successfully. You will be redirected shortly.');
+            showToast('Account deleted successfully', 'success');
+            document.getElementById('deleteAccountForm').reset();
+            
+            // Redirect to success page after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/account-deleted';
+            }, 2000);
+        } catch (error) {
+            showError(error.message || 'Failed to delete account. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHTML;
+        }
+    });
+</script>
+
+<%- include('partials/footer') %>
+

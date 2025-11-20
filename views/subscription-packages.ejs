@@ -1,0 +1,418 @@
+<%- include('partials/layout', { title: 'Subscription Packages Management', admin: admin }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackageModal">
+        <i class="bi bi-plus-circle me-2"></i>Add Package
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">All Subscription Packages</h5>
+        <div class="input-group" style="width: 300px;">
+            <input type="text" class="form-control" id="searchInput" placeholder="Search packages...">
+            <button class="btn btn-outline-secondary" onclick="searchPackages()">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Display Name</th>
+                        <th>Description</th>
+                        <th>Monthly</th>
+                        <th>Quarterly</th>
+                        <th>Semi-Annual</th>
+                        <th>Yearly</th>
+                        <th>Currency</th>
+                        <th>Max Cashiers</th>
+                        <th>Max Products</th>
+                        <th>Trial Days</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="packagesTableBody">
+                    <tr>
+                        <td colspan="15" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav>
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Add/Edit Package Modal -->
+<div class="modal fade" id="addPackageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Package</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="packageForm">
+                    <input type="hidden" id="packageId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="name" required maxlength="20" placeholder="e.g., basic, premium">
+                            <small class="form-text text-muted">Short identifier (max 20 chars)</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Display Name *</label>
+                            <input type="text" class="form-control" id="displayName" required maxlength="100" placeholder="e.g., Basic Plan">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" rows="3" required placeholder="Package description"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Monthly Price *</label>
+                            <input type="number" step="0.01" class="form-control" id="monthlyPrice" required min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Quarterly Price *</label>
+                            <input type="number" step="0.01" class="form-control" id="quarterlyPrice" required min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Semi-Annual Price *</label>
+                            <input type="number" step="0.01" class="form-control" id="semiAnnualPrice" required min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Yearly Price *</label>
+                            <input type="number" step="0.01" class="form-control" id="yearlyPrice" required min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" id="currency">
+                                <option value="NGN">NGN</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Trial Days</label>
+                            <input type="number" class="form-control" id="trialDays" min="0" value="30">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Max Cashiers</label>
+                            <input type="number" class="form-control" id="maxCashiers" min="-1" value="-1">
+                            <small class="form-text text-muted">-1 for unlimited</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Max Products</label>
+                            <input type="number" class="form-control" id="maxProducts" min="-1" value="-1">
+                            <small class="form-text text-muted">-1 for unlimited</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Max Transactions</label>
+                            <input type="number" class="form-control" id="maxTransactions" min="-1" value="-1">
+                            <small class="form-text text-muted">-1 for unlimited</small>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Features (JSON Array)</label>
+                            <textarea class="form-control" id="features" rows="4" placeholder='["Feature 1", "Feature 2", "Feature 3"]'></textarea>
+                            <small class="form-text text-muted">Enter as JSON array of strings</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="isActive">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePackage()">Save Package</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const limit = 20;
+
+    async function loadPackages(page = 1) {
+        const tbody = document.getElementById('packagesTableBody');
+        try {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="15" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            console.log('Loading packages, page:', page);
+            const token = getToken();
+            if (!token) {
+                throw new Error('No authentication token found. Please login again.');
+            }
+
+            const data = await apiRequest(`/api/database/tables/subscription_packages/data?page=${page}&limit=${limit}`);
+            console.log('Packages API response:', data);
+            
+            if (!data || !data.success) {
+                throw new Error(data?.message || data?.error || 'Failed to load packages');
+            }
+
+            if (!data.data) {
+                throw new Error('Invalid response format: missing data field');
+            }
+
+            if (!Array.isArray(data.data)) {
+                console.error('Data is not an array:', typeof data.data, data.data);
+                throw new Error('Invalid response format: data is not an array');
+            }
+
+            displayPackages(data.data);
+            displayPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
+            currentPage = page;
+        } catch (error) {
+            console.error('Error loading packages:', error);
+            const errorMessage = error.message || 'Unknown error occurred';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="15" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading packages: ${errorMessage}
+                        <br>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="loadPackages(${page})">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+            showToast('Error loading packages: ' + errorMessage, 'error');
+        }
+    }
+
+    function displayPackages(packages) {
+        const tbody = document.getElementById('packagesTableBody');
+        if (packages.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="15" class="text-center">No packages found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = packages.map(pkg => {
+            const pkgId = pkg.id ? (typeof pkg.id === 'string' ? pkg.id.substring(0, 8) + '...' : String(pkg.id).substring(0, 8) + '...') : '-';
+            const pkgIdFull = pkg.id ? String(pkg.id) : '';
+            const description = pkg.description ? (pkg.description.length > 50 ? pkg.description.substring(0, 50) + '...' : pkg.description) : '-';
+            const maxCashiers = pkg.max_cashiers === -1 ? 'Unlimited' : pkg.max_cashiers;
+            const maxProducts = pkg.max_products === -1 ? 'Unlimited' : pkg.max_products;
+            
+            return `
+                <tr>
+                    <td><small>${pkgId}</small></td>
+                    <td><strong>${pkg.name || '-'}</strong></td>
+                    <td>${pkg.display_name || '-'}</td>
+                    <td><small>${description}</small></td>
+                    <td>${formatCurrency(pkg.monthly_price, pkg.currency)}</td>
+                    <td>${formatCurrency(pkg.quarterly_price, pkg.currency)}</td>
+                    <td>${formatCurrency(pkg.semi_annual_price, pkg.currency)}</td>
+                    <td>${formatCurrency(pkg.yearly_price, pkg.currency)}</td>
+                    <td>${pkg.currency || 'NGN'}</td>
+                    <td>${maxCashiers}</td>
+                    <td>${maxProducts}</td>
+                    <td>${pkg.trial_days || 30}</td>
+                    <td>
+                        <span class="badge ${pkg.is_active ? 'bg-success' : 'bg-danger'}">
+                            ${pkg.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td><small>${formatDate(pkg.created_at)}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editPackage('${pkgIdFull}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePackage('${pkgIdFull}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function displayPagination(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        if (pagination.totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 1; i <= pagination.totalPages; i++) {
+            html += `
+                <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadPackages(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+        paginationEl.innerHTML = html;
+    }
+
+    async function editPackage(packageId) {
+        try {
+            const data = await apiRequest(`/api/database/tables/subscription_packages/data/${packageId}`);
+            const pkg = data.data;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Package';
+            document.getElementById('packageId').value = pkg.id;
+            document.getElementById('name').value = pkg.name || '';
+            document.getElementById('displayName').value = pkg.display_name || '';
+            document.getElementById('description').value = pkg.description || '';
+            document.getElementById('monthlyPrice').value = pkg.monthly_price || 0;
+            document.getElementById('quarterlyPrice').value = pkg.quarterly_price || 0;
+            document.getElementById('semiAnnualPrice').value = pkg.semi_annual_price || 0;
+            document.getElementById('yearlyPrice').value = pkg.yearly_price || 0;
+            document.getElementById('currency').value = pkg.currency || 'NGN';
+            document.getElementById('trialDays').value = pkg.trial_days || 30;
+            document.getElementById('maxCashiers').value = pkg.max_cashiers !== undefined ? pkg.max_cashiers : -1;
+            document.getElementById('maxProducts').value = pkg.max_products !== undefined ? pkg.max_products : -1;
+            document.getElementById('maxTransactions').value = pkg.max_transactions !== undefined ? pkg.max_transactions : -1;
+            document.getElementById('isActive').value = pkg.is_active ? 'true' : 'false';
+            
+            // Handle features JSON
+            if (pkg.features) {
+                if (typeof pkg.features === 'string') {
+                    document.getElementById('features').value = pkg.features;
+                } else {
+                    document.getElementById('features').value = JSON.stringify(pkg.features, null, 2);
+                }
+            } else {
+                document.getElementById('features').value = '[]';
+            }
+
+            new bootstrap.Modal(document.getElementById('addPackageModal')).show();
+        } catch (error) {
+            showToast('Error loading package: ' + error.message, 'error');
+        }
+    }
+
+    async function savePackage() {
+        const packageId = document.getElementById('packageId').value;
+        const packageData = {
+            name: document.getElementById('name').value,
+            display_name: document.getElementById('displayName').value,
+            description: document.getElementById('description').value,
+            monthly_price: parseFloat(document.getElementById('monthlyPrice').value) || 0,
+            quarterly_price: parseFloat(document.getElementById('quarterlyPrice').value) || 0,
+            semi_annual_price: parseFloat(document.getElementById('semiAnnualPrice').value) || 0,
+            yearly_price: parseFloat(document.getElementById('yearlyPrice').value) || 0,
+            currency: document.getElementById('currency').value,
+            trial_days: parseInt(document.getElementById('trialDays').value) || 30,
+            max_cashiers: parseInt(document.getElementById('maxCashiers').value) || -1,
+            max_products: parseInt(document.getElementById('maxProducts').value) || -1,
+            max_transactions: parseInt(document.getElementById('maxTransactions').value) || -1,
+            is_active: document.getElementById('isActive').value === 'true'
+        };
+
+        // Parse features JSON
+        const featuresText = document.getElementById('features').value.trim();
+        if (featuresText) {
+            try {
+                packageData.features = JSON.parse(featuresText);
+            } catch (error) {
+                showToast('Invalid JSON format for features. Please check and try again.', 'error');
+                return;
+            }
+        } else {
+            packageData.features = [];
+        }
+
+        try {
+            if (packageId) {
+                await apiRequest(`/api/database/tables/subscription_packages/data/${packageId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(packageData)
+                });
+                showToast('Package updated successfully', 'success');
+            } else {
+                await apiRequest('/api/database/tables/subscription_packages/data', {
+                    method: 'POST',
+                    body: JSON.stringify(packageData)
+                });
+                showToast('Package created successfully', 'success');
+            }
+            bootstrap.Modal.getInstance(document.getElementById('addPackageModal')).hide();
+            document.getElementById('packageForm').reset();
+            loadPackages(currentPage);
+        } catch (error) {
+            showToast('Error saving package: ' + error.message, 'error');
+        }
+    }
+
+    async function deletePackage(packageId) {
+        if (!confirm('Are you sure you want to delete this package?')) return;
+
+        try {
+            await apiRequest(`/api/database/tables/subscription_packages/data/${packageId}`, {
+                method: 'DELETE'
+            });
+            showToast('Package deleted successfully', 'success');
+            loadPackages(currentPage);
+        } catch (error) {
+            showToast('Error deleting package: ' + error.message, 'error');
+        }
+    }
+
+    function searchPackages() {
+        const search = document.getElementById('searchInput').value;
+        // Implement search functionality
+        loadPackages(1);
+    }
+
+    // Reset modal on close
+    document.getElementById('addPackageModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('packageForm').reset();
+        document.getElementById('packageId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Package';
+        document.getElementById('features').value = '';
+    });
+
+    // Initialize when DOM is ready
+    function initializePackagesPage() {
+        // Check authentication and load packages
+        if (!getToken()) {
+            console.warn('No token found, redirecting to login');
+            window.location.href = '/login';
+        } else {
+            console.log('Token found, loading packages...');
+            loadPackages();
+        }
+    }
+
+    // Run initialization when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePackagesPage);
+    } else {
+        // DOM is already ready
+        initializePackagesPage();
+    }
+</script>
+
+<%- include('partials/footer-layout') %>
+

@@ -1,0 +1,122 @@
+    <% if (typeof admin !== 'undefined' && admin !== null) { %>
+    </div>
+    <% } %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('admin_token');
+        }
+
+        // Set token in localStorage
+        function setToken(token) {
+            localStorage.setItem('admin_token', token);
+        }
+
+        // Remove token and redirect to login
+        function logout() {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/login';
+        }
+
+        // API request helper
+        async function apiRequest(url, options = {}) {
+            const token = getToken();
+            if (!token && !url.includes('/login')) {
+                window.location.href = '/login';
+                throw new Error('No authentication token');
+            }
+
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (token) {
+                defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const finalOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...(options.headers || {})
+                }
+            };
+
+            try {
+                console.log('Making API request to:', url);
+                console.log('Request headers:', finalOptions.headers);
+                
+                const response = await fetch(url, finalOptions);
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                // Check if response is JSON
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                    console.log('Response data:', data);
+                } else {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+                }
+                
+                if (!response.ok) {
+                    console.error('Request failed:', response.status, data);
+                    if (response.status === 401) {
+                        console.error('Unauthorized - redirecting to login');
+                        logout();
+                        throw new Error('Unauthorized - Please login again');
+                    }
+                    throw new Error(data.message || data.error || `Request failed with status ${response.status}`);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                // Re-throw with more context if it's a network error
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Network error - Cannot connect to server');
+                }
+                throw error;
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        // Format currency
+        function formatCurrency(amount, currency = 'NGN') {
+            if (!amount) return '-';
+            return new Intl.NumberFormat('en-NG', {
+                style: 'currency',
+                currency: currency
+            }).format(amount);
+        }
+    </script>
+</body>
+</html>
+

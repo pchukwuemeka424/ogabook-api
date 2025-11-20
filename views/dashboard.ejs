@@ -1,0 +1,215 @@
+<%- include('partials/layout', { title: 'Dashboard', admin: admin }) %>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-value" id="totalUsers">-</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-credit-card"></i>
+            </div>
+            <div class="stat-value" id="totalSubscriptions">-</div>
+            <div class="stat-label">Subscriptions</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <div class="stat-value" id="totalSales">-</div>
+            <div class="stat-label">Total Sales</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i class="bi bi-database"></i>
+            </div>
+            <div class="stat-value" id="totalTables">-</div>
+            <div class="stat-label">Database Tables</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Quick Actions</span>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshStats()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="/users" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-people me-2"></i>Manage Users
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/subscriptions" class="btn btn-outline-success w-100">
+                            <i class="bi bi-credit-card me-2"></i>Manage Subscriptions
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/tables" class="btn btn-outline-info w-100">
+                            <i class="bi bi-database me-2"></i>View All Tables
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/dashboard" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadDashboardStats() {
+        console.log('🔄 Loading dashboard stats...');
+        
+        // Check token first
+        const token = getToken();
+        if (!token) {
+            console.error('❌ No token found');
+            window.location.href = '/login';
+            return;
+        }
+
+        // Set loading state
+        const elements = {
+            totalTables: document.getElementById('totalTables'),
+            totalUsers: document.getElementById('totalUsers'),
+            totalSubscriptions: document.getElementById('totalSubscriptions'),
+            totalSales: document.getElementById('totalSales')
+        };
+
+        // Set all to loading
+        Object.values(elements).forEach(el => {
+            if (el) el.textContent = '...';
+        });
+
+        // Get tables count
+        try {
+            console.log('📊 Fetching tables...');
+            const tablesData = await apiRequest('/api/database/tables');
+            console.log('✅ Tables response:', tablesData);
+            if (tablesData && tablesData.success && tablesData.tables) {
+                elements.totalTables.textContent = tablesData.tables.length;
+                console.log(`✅ Tables count: ${tablesData.tables.length}`);
+            } else {
+                elements.totalTables.textContent = '0';
+                console.warn('⚠️ Invalid tables data:', tablesData);
+            }
+        } catch (error) {
+            console.error('❌ Error loading tables:', error);
+            elements.totalTables.textContent = 'Error';
+            showToast('Error loading tables: ' + error.message, 'error');
+        }
+
+        // Get users count
+        try {
+            console.log('👥 Fetching users...');
+            const usersData = await apiRequest('/api/database/tables/users/data?page=1&limit=1');
+            console.log('✅ Users response:', usersData);
+            if (usersData && usersData.success && usersData.pagination) {
+                elements.totalUsers.textContent = usersData.pagination.total || 0;
+                console.log(`✅ Users count: ${usersData.pagination.total}`);
+            } else {
+                elements.totalUsers.textContent = '0';
+                console.warn('⚠️ Invalid users data:', usersData);
+            }
+        } catch (error) {
+            console.error('❌ Error loading users:', error);
+            elements.totalUsers.textContent = 'Error';
+            showToast('Error loading users: ' + error.message, 'error');
+        }
+
+        // Get subscriptions count
+        try {
+            console.log('💳 Fetching subscriptions...');
+            const subsData = await apiRequest('/api/database/tables/subscriptions/data?page=1&limit=1');
+            console.log('✅ Subscriptions response:', subsData);
+            if (subsData && subsData.success && subsData.pagination) {
+                elements.totalSubscriptions.textContent = subsData.pagination.total || 0;
+                console.log(`✅ Subscriptions count: ${subsData.pagination.total}`);
+            } else {
+                elements.totalSubscriptions.textContent = '0';
+                console.warn('⚠️ Invalid subscriptions data:', subsData);
+            }
+        } catch (error) {
+            console.error('❌ Error loading subscriptions:', error);
+            elements.totalSubscriptions.textContent = 'Error';
+            showToast('Error loading subscriptions: ' + error.message, 'error');
+        }
+
+        // Get sales count
+        try {
+            console.log('🛒 Fetching sales...');
+            const salesData = await apiRequest('/api/database/tables/sales/data?page=1&limit=1');
+            console.log('✅ Sales response:', salesData);
+            if (salesData && salesData.success && salesData.pagination) {
+                elements.totalSales.textContent = salesData.pagination.total || 0;
+                console.log(`✅ Sales count: ${salesData.pagination.total}`);
+            } else {
+                elements.totalSales.textContent = '0';
+                console.warn('⚠️ Invalid sales data:', salesData);
+            }
+        } catch (error) {
+            console.error('❌ Error loading sales:', error);
+            elements.totalSales.textContent = 'Error';
+            showToast('Error loading sales: ' + error.message, 'error');
+        }
+
+        console.log('✅ Dashboard stats loading complete');
+    }
+
+    function refreshStats() {
+        console.log('🔄 Refreshing stats...');
+        loadDashboardStats();
+        showToast('Stats refreshed', 'success');
+    }
+
+    // Initialize dashboard
+    (async function initDashboard() {
+        console.log('🚀 Initializing dashboard...');
+        
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboard);
+            return;
+        }
+
+        const token = getToken();
+        
+        if (!token) {
+            console.error('❌ No token found - redirecting to login');
+            window.location.href = '/login';
+            return;
+        }
+
+        console.log('✅ Token found:', token.substring(0, 20) + '...');
+        console.log('✅ Loading dashboard stats...');
+        
+        // Small delay to ensure all elements are rendered
+        setTimeout(async () => {
+            await loadDashboardStats();
+        }, 100);
+    })();
+</script>
+
+<%- include('partials/footer-layout') %>

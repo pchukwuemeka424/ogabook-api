@@ -1,0 +1,323 @@
+<%- include('partials/layout', { title: `Table: ${tableName}`, admin: admin }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="/tables" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to Tables
+    </a>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecordModal">
+        <i class="bi bi-plus-circle me-2"></i>Add Record
+    </button>
+</div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Table Data</h5>
+            <div class="input-group" style="width: 300px;">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search...">
+                <button class="btn btn-outline-secondary" onclick="searchData()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-hover table-striped">
+                    <thead class="table-light sticky-top">
+                        <tr id="tableHeaders">
+                            <th>Loading...</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableDataBody">
+                        <tr>
+                            <td colspan="100" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Record Modal -->
+<div class="modal fade" id="addRecordModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="recordForm">
+                    <input type="hidden" id="recordId">
+                    <div id="formFields" class="row">
+                        <!-- Dynamic form fields will be inserted here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRecord()">Save Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tableName = '<%= tableName %>';
+    let currentPage = 1;
+    let tableStructure = null;
+    let primaryKey = null;
+    const limit = 50;
+
+    async function loadTableStructure() {
+        try {
+            const data = await apiRequest(`/api/database/tables/${tableName}/structure`);
+            tableStructure = data.structure;
+            primaryKey = data.structure.primaryKeys[0] || null;
+            return data.structure;
+        } catch (error) {
+            showToast('Error loading table structure: ' + error.message, 'error');
+        }
+    }
+
+    async function loadTableData(page = 1) {
+        try {
+            const data = await apiRequest(`/api/database/tables/${tableName}/data?page=${page}&limit=${limit}`);
+            displayTableData(data.data);
+            displayPagination(data.pagination);
+            currentPage = page;
+        } catch (error) {
+            showToast('Error loading table data: ' + error.message, 'error');
+        }
+    }
+
+    function displayTableData(records) {
+        if (!tableStructure) return;
+
+        const thead = document.getElementById('tableHeaders');
+        const tbody = document.getElementById('tableDataBody');
+
+        if (records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${tableStructure.columns.length + 1}" class="text-center">No records found</td></tr>`;
+            return;
+        }
+
+        // Build headers
+        thead.innerHTML = `
+            ${tableStructure.columns.map(col => `<th>${col.column_name}</th>`).join('')}
+            <th>Actions</th>
+        `;
+
+        // Build rows
+        tbody.innerHTML = records.map(record => {
+            const cells = tableStructure.columns.map(col => {
+                let value = record[col.column_name];
+                if (value === null || value === undefined) value = '-';
+                else if (typeof value === 'object') value = JSON.stringify(value);
+                else if (col.data_type.includes('timestamp')) value = formatDate(value);
+                return `<td><small>${value}</small></td>`;
+            }).join('');
+
+            const recordId = primaryKey ? record[primaryKey] : record.id;
+            return `
+                <tr>
+                    ${cells}
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editRecord('${recordId}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRecord('${recordId}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function displayPagination(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        if (pagination.totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 1; i <= pagination.totalPages; i++) {
+            html += `
+                <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadTableData(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+        paginationEl.innerHTML = html;
+    }
+
+    function createFormFields(record = null) {
+        if (!tableStructure) return;
+
+        const formFields = document.getElementById('formFields');
+        formFields.innerHTML = tableStructure.columns.map(col => {
+            if (col.column_name === 'id' && col.column_default) {
+                // Skip auto-generated IDs
+                return '';
+            }
+
+            let value = record ? (record[col.column_name] || '') : '';
+            if (value && typeof value === 'object') {
+                value = JSON.stringify(value);
+            }
+            if (value && col.data_type.includes('timestamp')) {
+                const date = new Date(value);
+                value = date.toISOString().slice(0, 16);
+            }
+
+            let inputType = 'text';
+            if (col.data_type.includes('int')) inputType = 'number';
+            else if (col.data_type.includes('bool')) inputType = 'checkbox';
+            else if (col.data_type.includes('timestamp')) inputType = 'datetime-local';
+            else if (col.data_type.includes('date')) inputType = 'date';
+            else if (col.data_type.includes('text')) inputType = 'textarea';
+
+            const required = col.is_nullable === 'NO' && !col.column_default ? 'required' : '';
+
+            if (inputType === 'checkbox') {
+                return `
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">${col.column_name}</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="field_${col.column_name}" ${value ? 'checked' : ''}>
+                        </div>
+                    </div>
+                `;
+            } else if (inputType === 'textarea') {
+                return `
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">${col.column_name}</label>
+                        <textarea class="form-control" id="field_${col.column_name}" ${required}>${value}</textarea>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">${col.column_name}</label>
+                        <input type="${inputType}" class="form-control" id="field_${col.column_name}" value="${value}" ${required}>
+                    </div>
+                `;
+            }
+        }).filter(html => html).join('');
+    }
+
+    async function editRecord(recordId) {
+        try {
+            const data = await apiRequest(`/api/database/tables/${tableName}/data/${recordId}`);
+            createFormFields(data.data);
+            document.getElementById('recordId').value = recordId;
+            document.getElementById('modalTitle').textContent = 'Edit Record';
+            new bootstrap.Modal(document.getElementById('addRecordModal')).show();
+        } catch (error) {
+            showToast('Error loading record: ' + error.message, 'error');
+        }
+    }
+
+    async function saveRecord() {
+        if (!tableStructure) return;
+
+        const recordId = document.getElementById('recordId').value;
+        const recordData = {};
+
+        tableStructure.columns.forEach(col => {
+            if (col.column_name === 'id' && col.column_default) return;
+
+            const field = document.getElementById(`field_${col.column_name}`);
+            if (!field) return;
+
+            let value = field.type === 'checkbox' ? field.checked : field.value;
+
+            if (col.data_type.includes('int') || col.data_type.includes('numeric')) {
+                value = value ? parseFloat(value) : null;
+            } else if (col.data_type.includes('bool')) {
+                value = value === true || value === 'true';
+            } else if (col.data_type.includes('jsonb') || col.data_type.includes('json')) {
+                try {
+                    value = value ? JSON.parse(value) : null;
+                } catch {
+                    value = value;
+                }
+            }
+
+            if (value !== '' && value !== null) {
+                recordData[col.column_name] = value;
+            }
+        });
+
+        try {
+            if (recordId) {
+                await apiRequest(`/api/database/tables/${tableName}/data/${recordId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(recordData)
+                });
+                showToast('Record updated successfully', 'success');
+            } else {
+                await apiRequest(`/api/database/tables/${tableName}/data`, {
+                    method: 'POST',
+                    body: JSON.stringify(recordData)
+                });
+                showToast('Record created successfully', 'success');
+            }
+            bootstrap.Modal.getInstance(document.getElementById('addRecordModal')).hide();
+            document.getElementById('recordForm').reset();
+            loadTableData(currentPage);
+        } catch (error) {
+            showToast('Error saving record: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteRecord(recordId) {
+        if (!confirm('Are you sure you want to delete this record?')) return;
+
+        try {
+            await apiRequest(`/api/database/tables/${tableName}/data/${recordId}`, {
+                method: 'DELETE'
+            });
+            showToast('Record deleted successfully', 'success');
+            loadTableData(currentPage);
+        } catch (error) {
+            showToast('Error deleting record: ' + error.message, 'error');
+        }
+    }
+
+    function searchData() {
+        // Implement search
+        loadTableData(1);
+    }
+
+    // Reset modal on close
+    document.getElementById('addRecordModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('recordForm').reset();
+        document.getElementById('recordId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Record';
+    });
+
+    // Initialize
+    if (!getToken()) {
+        window.location.href = '/login';
+    } else {
+        (async () => {
+            await loadTableStructure();
+            createFormFields();
+            loadTableData();
+        })();
+    }
+</script>
+
+<%- include('partials/footer-layout') %>
+

@@ -1,0 +1,377 @@
+<%- include('partials/layout', { title: 'Subscriptions Management', admin: admin }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubscriptionModal">
+        <i class="bi bi-plus-circle me-2"></i>Add Subscription
+    </button>
+</div>
+
+<div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">All Subscriptions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Status</th>
+                            <th>Package</th>
+                            <th>Billing Cycle</th>
+                            <th>Amount</th>
+                            <th>Trial End</th>
+                            <th>Subscription End</th>
+                            <th>Auto Renew</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscriptionsTableBody">
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Subscription Modal -->
+<div class="modal fade" id="addSubscriptionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="subscriptionForm">
+                    <input type="hidden" id="subscriptionId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">User ID *</label>
+                            <input type="text" class="form-control" id="userId" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Manager ID *</label>
+                            <input type="text" class="form-control" id="managerId" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status *</label>
+                            <select class="form-select" id="status" required>
+                                <option value="trial">Trial</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Package</label>
+                            <select class="form-select" id="package">
+                                <option value="basic">Basic</option>
+                                <option value="standard">Standard</option>
+                                <option value="premium">Premium</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Billing Cycle</label>
+                            <select class="form-select" id="billingCycle">
+                                <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="semi_annual">Semi-Annual</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="amount">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" id="currency">
+                                <option value="NGN">NGN</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Trial End Date</label>
+                            <input type="datetime-local" class="form-control" id="trialEndDate">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Subscription End Date</label>
+                            <input type="datetime-local" class="form-control" id="subscriptionEndDate">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Auto Renew</label>
+                            <select class="form-select" id="autoRenew">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSubscription()">Save Subscription</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const limit = 20;
+
+    async function loadSubscriptions(page = 1) {
+        const tbody = document.getElementById('subscriptionsTableBody');
+        try {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            console.log('Loading subscriptions, page:', page);
+            const token = getToken();
+            if (!token) {
+                throw new Error('No authentication token found. Please login again.');
+            }
+
+            const data = await apiRequest(`/api/database/tables/subscriptions/data?page=${page}&limit=${limit}`);
+            console.log('Subscriptions API response:', data);
+            
+            if (!data || !data.success) {
+                throw new Error(data?.message || data?.error || 'Failed to load subscriptions');
+            }
+
+            if (!data.data) {
+                throw new Error('Invalid response format: missing data field');
+            }
+
+            if (!Array.isArray(data.data)) {
+                console.error('Data is not an array:', typeof data.data, data.data);
+                throw new Error('Invalid response format: data is not an array');
+            }
+
+            displaySubscriptions(data.data);
+            displayPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
+            currentPage = page;
+        } catch (error) {
+            console.error('Error loading subscriptions:', error);
+            const errorMessage = error.message || 'Unknown error occurred';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading subscriptions: ${errorMessage}
+                        <br>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="loadSubscriptions(${page})">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+            showToast('Error loading subscriptions: ' + errorMessage, 'error');
+        }
+    }
+
+    function displaySubscriptions(subscriptions) {
+        const tbody = document.getElementById('subscriptionsTableBody');
+        if (subscriptions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No subscriptions found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = subscriptions.map(sub => {
+            const statusColors = {
+                'trial': 'bg-info',
+                'active': 'bg-success',
+                'expired': 'bg-warning',
+                'cancelled': 'bg-danger'
+            };
+            const subId = sub.id ? (typeof sub.id === 'string' ? sub.id.substring(0, 8) + '...' : String(sub.id).substring(0, 8) + '...') : '-';
+            const subIdFull = sub.id ? String(sub.id) : '';
+            const userId = sub.user_id ? (typeof sub.user_id === 'string' ? sub.user_id.substring(0, 8) + '...' : String(sub.user_id).substring(0, 8) + '...') : '-';
+            return `
+                <tr>
+                    <td><small>${subId}</small></td>
+                    <td><small>${userId}</small></td>
+                    <td><span class="badge ${statusColors[sub.status] || 'bg-secondary'}">${sub.status || '-'}</span></td>
+                    <td>${sub.package || '-'}</td>
+                    <td>${sub.billing_cycle || '-'}</td>
+                    <td>${formatCurrency(sub.amount, sub.currency)}</td>
+                    <td><small>${formatDate(sub.trial_end_date)}</small></td>
+                    <td><small>${formatDate(sub.subscription_end_date)}</small></td>
+                    <td>
+                        <span class="badge ${sub.auto_renew ? 'bg-success' : 'bg-secondary'}">
+                            ${sub.auto_renew ? 'Yes' : 'No'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editSubscription('${subIdFull}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSubscription('${subIdFull}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function displayPagination(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        if (pagination.totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 1; i <= pagination.totalPages; i++) {
+            html += `
+                <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadSubscriptions(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+        paginationEl.innerHTML = html;
+    }
+
+    async function editSubscription(subscriptionId) {
+        try {
+            const data = await apiRequest(`/api/database/tables/subscriptions/data/${subscriptionId}`);
+            const sub = data.data;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Subscription';
+            document.getElementById('subscriptionId').value = sub.id;
+            document.getElementById('userId').value = sub.user_id || '';
+            document.getElementById('managerId').value = sub.manager_id || '';
+            document.getElementById('status').value = sub.status || 'trial';
+            document.getElementById('package').value = sub.package || 'basic';
+            document.getElementById('billingCycle').value = sub.billing_cycle || 'monthly';
+            document.getElementById('amount').value = sub.amount || '';
+            document.getElementById('currency').value = sub.currency || 'NGN';
+            document.getElementById('autoRenew').value = sub.auto_renew ? 'true' : 'false';
+
+            if (sub.trial_end_date) {
+                const trialDate = new Date(sub.trial_end_date);
+                document.getElementById('trialEndDate').value = trialDate.toISOString().slice(0, 16);
+            }
+            if (sub.subscription_end_date) {
+                const subDate = new Date(sub.subscription_end_date);
+                document.getElementById('subscriptionEndDate').value = subDate.toISOString().slice(0, 16);
+            }
+
+            new bootstrap.Modal(document.getElementById('addSubscriptionModal')).show();
+        } catch (error) {
+            showToast('Error loading subscription: ' + error.message, 'error');
+        }
+    }
+
+    async function saveSubscription() {
+        const subscriptionId = document.getElementById('subscriptionId').value;
+        const subscriptionData = {
+            user_id: document.getElementById('userId').value,
+            manager_id: document.getElementById('managerId').value,
+            status: document.getElementById('status').value,
+            package: document.getElementById('package').value,
+            billing_cycle: document.getElementById('billingCycle').value,
+            amount: parseFloat(document.getElementById('amount').value) || 0,
+            currency: document.getElementById('currency').value,
+            auto_renew: document.getElementById('autoRenew').value === 'true'
+        };
+
+        const trialEnd = document.getElementById('trialEndDate').value;
+        if (trialEnd) {
+            subscriptionData.trial_end_date = new Date(trialEnd).toISOString();
+        }
+
+        const subEnd = document.getElementById('subscriptionEndDate').value;
+        if (subEnd) {
+            subscriptionData.subscription_end_date = new Date(subEnd).toISOString();
+        }
+
+        try {
+            if (subscriptionId) {
+                await apiRequest(`/api/database/tables/subscriptions/data/${subscriptionId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(subscriptionData)
+                });
+                showToast('Subscription updated successfully', 'success');
+            } else {
+                await apiRequest('/api/database/tables/subscriptions/data', {
+                    method: 'POST',
+                    body: JSON.stringify(subscriptionData)
+                });
+                showToast('Subscription created successfully', 'success');
+            }
+            bootstrap.Modal.getInstance(document.getElementById('addSubscriptionModal')).hide();
+            document.getElementById('subscriptionForm').reset();
+            loadSubscriptions(currentPage);
+        } catch (error) {
+            showToast('Error saving subscription: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteSubscription(subscriptionId) {
+        if (!confirm('Are you sure you want to delete this subscription?')) return;
+
+        try {
+            await apiRequest(`/api/database/tables/subscriptions/data/${subscriptionId}`, {
+                method: 'DELETE'
+            });
+            showToast('Subscription deleted successfully', 'success');
+            loadSubscriptions(currentPage);
+        } catch (error) {
+            showToast('Error deleting subscription: ' + error.message, 'error');
+        }
+    }
+
+    // Reset modal on close
+    document.getElementById('addSubscriptionModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('subscriptionForm').reset();
+        document.getElementById('subscriptionId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Subscription';
+    });
+
+    // Initialize when DOM is ready
+    function initializeSubscriptionsPage() {
+        // Check authentication and load subscriptions
+        if (!getToken()) {
+            console.warn('No token found, redirecting to login');
+            window.location.href = '/login';
+        } else {
+            console.log('Token found, loading subscriptions...');
+            loadSubscriptions();
+        }
+    }
+
+    // Run initialization when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeSubscriptionsPage);
+    } else {
+        // DOM is already ready
+        initializeSubscriptionsPage();
+    }
+</script>
+
+<%- include('partials/footer-layout') %>
+

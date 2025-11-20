@@ -1,0 +1,159 @@
+<%- include('partials/header', { title: 'Payment Cancelled - OgaBook' }) %>
+
+<style>
+    .cancelled-container {
+        min-height: 100vh;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .cancelled-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+        overflow: hidden;
+        text-align: center;
+    }
+    .cancelled-header {
+        background: #f59e0b;
+        color: white;
+        padding: 50px 30px;
+    }
+    .cancelled-icon-wrapper {
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+    .cancelled-icon-wrapper i {
+        font-size: 3.5rem;
+    }
+    .app-name {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+    .cancelled-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    .cancelled-body {
+        padding: 40px 30px;
+    }
+    .cancelled-message {
+        font-size: 1.1rem;
+        color: #374151;
+        margin-bottom: 30px;
+        line-height: 1.8;
+    }
+    .info-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+    .info-box p {
+        margin: 0;
+        color: #92400e;
+        line-height: 1.6;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .btn-primary-custom {
+        background: #f59e0b;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+    .btn-primary-custom:hover {
+        background: #d97706;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        color: white;
+    }
+    .btn-secondary-custom {
+        background: #f3f4f6;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+    .btn-secondary-custom:hover {
+        background: #e5e7eb;
+        border-color: #d1d5db;
+        color: #374151;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="cancelled-container">
+    <div class="cancelled-card">
+        <div class="cancelled-header">
+            <div class="cancelled-icon-wrapper">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="app-name">OgaBook</div>
+            <h1 class="cancelled-title">Payment Cancelled</h1>
+        </div>
+        
+        <div class="cancelled-body">
+            <p class="cancelled-message">
+                You cancelled the payment process. No charges were made to your account.
+            </p>
+            
+            <div class="info-box">
+                <p>
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Note:</strong> Your subscription was not activated. You can complete the payment 
+                    at any time to activate your subscription.
+                </p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="<%= typeof userId !== 'undefined' && userId ? `/?userId=${userId}&status=pending&package=basic&billingCycle=monthly&amount=200` : '/' %>" class="btn-primary-custom">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Try Again
+                </a>
+                <a href="/dashboard" class="btn-secondary-custom">
+                    <i class="bi bi-house"></i>
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

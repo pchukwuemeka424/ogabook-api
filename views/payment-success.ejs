@@ -1,0 +1,174 @@
+<%- include('partials/header', { title: 'Payment Successful - OgaBook' }) %>
+
+<style>
+    .success-container {
+        min-height: 100vh;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .success-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+        overflow: hidden;
+        text-align: center;
+    }
+    .success-header {
+        background: #10b981;
+        color: white;
+        padding: 50px 30px;
+    }
+    .success-icon-wrapper {
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+    .success-icon-wrapper i {
+        font-size: 3.5rem;
+    }
+    .app-name {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+    .success-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    .success-body {
+        padding: 40px 30px;
+    }
+    .success-message {
+        font-size: 1.1rem;
+        color: #374151;
+        margin-bottom: 30px;
+        line-height: 1.8;
+    }
+    .transaction-details {
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+    .transaction-details h5 {
+        color: #166534;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #d1fae5;
+    }
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #166534;
+    }
+    .detail-value {
+        color: #15803d;
+        font-family: monospace;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .btn-primary-custom {
+        background: #10b981;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .btn-primary-custom:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+</style>
+
+<div class="success-container">
+    <div class="success-card">
+        <div class="success-header">
+            <div class="success-icon-wrapper">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="app-name">OgaBook</div>
+            <h1 class="success-title">Payment Successful!</h1>
+        </div>
+        
+        <div class="success-body">
+            <p class="success-message">
+                Your payment has been processed successfully. Your subscription is now active.
+            </p>
+            
+            <div class="transaction-details">
+                <h5>
+                    <i class="bi bi-receipt"></i>
+                    Transaction Details
+                </h5>
+                <div class="detail-item">
+                    <span class="detail-label">Transaction ID:</span>
+                    <span class="detail-value" id="transactionId"><%= transactionId || 'N/A' %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reference:</span>
+                    <span class="detail-value" id="txRef"><%= txRef || 'N/A' %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Package:</span>
+                    <span class="detail-value"><%= package || 'N/A' %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Billing Cycle:</span>
+                    <span class="detail-value"><%= billingCycle || 'N/A' %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Amount:</span>
+                    <span class="detail-value">₦<%= amount ? parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></span>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="/dashboard" class="btn-primary-custom">
+                    <i class="bi bi-speedometer2"></i>
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

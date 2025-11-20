@@ -1,0 +1,153 @@
+<%- include('partials/layout', { title: 'Database Tables', admin: admin }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    <button class="btn btn-primary" onclick="refreshTables()">
+        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">All Tables</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>Schema</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tablesTableBody">
+                    <tr>
+                        <td colspan="3" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    async function loadTables() {
+        try {
+            const data = await apiRequest('/api/database/tables');
+            displayTables(data.tables);
+        } catch (error) {
+            showToast('Error loading tables: ' + error.message, 'error');
+        }
+    }
+
+    function displayTables(tables) {
+        const tbody = document.getElementById('tablesTableBody');
+        if (tables.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center">No tables found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = tables.map(table => `
+            <tr>
+                <td>
+                    <strong>${table.table_name}</strong>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">${table.table_schema}</span>
+                </td>
+                <td>
+                    <a href="/tables/${table.table_name}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye me-1"></i>View Data
+                    </a>
+                    <button class="btn btn-sm btn-info" onclick="viewStructure('${table.table_name}')">
+                        <i class="bi bi-info-circle me-1"></i>Structure
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function viewStructure(tableName) {
+        try {
+            const data = await apiRequest(`/api/database/tables/${tableName}/structure`);
+            const structure = data.structure;
+            
+            let structureHtml = `
+                <h5>Table Structure: ${tableName}</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Column Name</th>
+                            <th>Data Type</th>
+                            <th>Nullable</th>
+                            <th>Default</th>
+                            <th>Primary Key</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            structure.columns.forEach(col => {
+                const isPK = structure.primaryKeys.includes(col.column_name);
+                structureHtml += `
+                    <tr>
+                        <td><strong>${col.column_name}</strong></td>
+                        <td>${col.data_type}${col.character_maximum_length ? `(${col.character_maximum_length})` : ''}</td>
+                        <td>${col.is_nullable === 'YES' ? 'Yes' : 'No'}</td>
+                        <td>${col.column_default || '-'}</td>
+                        <td>${isPK ? '<span class="badge bg-primary">PK</span>' : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            structureHtml += '</tbody></table>';
+
+            // Create and show modal
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Table Structure</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${structureHtml}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            modal.addEventListener('hidden.bs.modal', () => modal.remove());
+        } catch (error) {
+            showToast('Error loading structure: ' + error.message, 'error');
+        }
+    }
+
+    function refreshTables() {
+        loadTables();
+        showToast('Tables refreshed', 'success');
+    }
+
+    // Check authentication and load tables
+    if (!getToken()) {
+        window.location.href = '/login';
+    } else {
+        loadTables();
+    }
+</script>
+
+<%- include('partials/footer-layout') %>
+

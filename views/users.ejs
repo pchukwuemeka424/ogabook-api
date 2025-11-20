@@ -1,0 +1,355 @@
+<%- include('partials/layout', { title: 'Users Management', admin: admin }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <i class="bi bi-plus-circle me-2"></i>Add User
+    </button>
+</div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">All Users</h5>
+            <div class="input-group" style="width: 300px;">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search users...">
+                <button class="btn btn-outline-secondary" onclick="searchUsers()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Business</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="firstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="lastName">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role *</label>
+                            <select class="form-select" id="role" required>
+                                <option value="manager">Manager</option>
+                                <option value="cashier">Cashier</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Business Name</label>
+                            <input type="text" class="form-control" id="businessName">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Business Type</label>
+                            <input type="text" class="form-control" id="businessType">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" id="currency">
+                                <option value="NGN">NGN</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="isActive">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">Save User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const limit = 20;
+
+    async function loadUsers(page = 1) {
+        const tbody = document.getElementById('usersTableBody');
+        try {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            console.log('Loading users, page:', page);
+            const token = getToken();
+            if (!token) {
+                throw new Error('No authentication token found. Please login again.');
+            }
+
+            const data = await apiRequest(`/api/database/tables/users/data?page=${page}&limit=${limit}`);
+            console.log('Users API response:', data);
+            
+            if (!data || !data.success) {
+                throw new Error(data?.message || data?.error || 'Failed to load users');
+            }
+
+            if (!data.data) {
+                throw new Error('Invalid response format: missing data field');
+            }
+
+            if (!Array.isArray(data.data)) {
+                console.error('Data is not an array:', typeof data.data, data.data);
+                throw new Error('Invalid response format: data is not an array');
+            }
+
+            displayUsers(data.data);
+            displayPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
+            currentPage = page;
+        } catch (error) {
+            console.error('Error loading users:', error);
+            const errorMessage = error.message || 'Unknown error occurred';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading users: ${errorMessage}
+                        <br>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="loadUsers(${page})">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+            showToast('Error loading users: ' + errorMessage, 'error');
+        }
+    }
+
+    function displayUsers(users) {
+        const tbody = document.getElementById('usersTableBody');
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">No users found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(user => {
+            const userId = user.id ? (typeof user.id === 'string' ? user.id.substring(0, 8) + '...' : String(user.id).substring(0, 8) + '...') : '-';
+            const userIdFull = user.id ? String(user.id) : '';
+            return `
+            <tr>
+                <td><small>${userId}</small></td>
+                <td>${user.username || '-'}</td>
+                <td>${user.email || '-'}</td>
+                <td>${(user.first_name || '')} ${user.last_name || ''}</td>
+                <td><span class="badge bg-info">${user.role || '-'}</span></td>
+                <td>${user.business_name || '-'}</td>
+                <td>
+                    <span class="badge ${user.is_active ? 'bg-success' : 'bg-danger'}">
+                        ${user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
+                <td><small>${formatDate(user.created_at)}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editUser('${userIdFull}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser('${userIdFull}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        }).join('');
+    }
+
+    function displayPagination(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        if (pagination.totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 1; i <= pagination.totalPages; i++) {
+            html += `
+                <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadUsers(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+        paginationEl.innerHTML = html;
+    }
+
+    async function editUser(userId) {
+        try {
+            const data = await apiRequest(`/api/database/tables/users/data/${userId}`);
+            const user = data.data;
+            
+            document.getElementById('modalTitle').textContent = 'Edit User';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('firstName').value = user.first_name || '';
+            document.getElementById('lastName').value = user.last_name || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('role').value = user.role || 'manager';
+            document.getElementById('businessName').value = user.business_name || '';
+            document.getElementById('businessType').value = user.business_type || '';
+            document.getElementById('currency').value = user.currency || 'NGN';
+            document.getElementById('isActive').value = user.is_active ? 'true' : 'false';
+
+            new bootstrap.Modal(document.getElementById('addUserModal')).show();
+        } catch (error) {
+            showToast('Error loading user: ' + error.message, 'error');
+        }
+    }
+
+    async function saveUser() {
+        const userId = document.getElementById('userId').value;
+        const userData = {
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
+            phone: document.getElementById('phone').value,
+            role: document.getElementById('role').value,
+            business_name: document.getElementById('businessName').value,
+            business_type: document.getElementById('businessType').value,
+            currency: document.getElementById('currency').value,
+            is_active: document.getElementById('isActive').value === 'true'
+        };
+
+        try {
+            if (userId) {
+                await apiRequest(`/api/database/tables/users/data/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(userData)
+                });
+                showToast('User updated successfully', 'success');
+            } else {
+                await apiRequest('/api/database/tables/users/data', {
+                    method: 'POST',
+                    body: JSON.stringify(userData)
+                });
+                showToast('User created successfully', 'success');
+            }
+            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            document.getElementById('userForm').reset();
+            loadUsers(currentPage);
+        } catch (error) {
+            showToast('Error saving user: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+            await apiRequest(`/api/database/tables/users/data/${userId}`, {
+                method: 'DELETE'
+            });
+            showToast('User deleted successfully', 'success');
+            loadUsers(currentPage);
+        } catch (error) {
+            showToast('Error deleting user: ' + error.message, 'error');
+        }
+    }
+
+    function searchUsers() {
+        const search = document.getElementById('searchInput').value;
+        // Implement search functionality
+        loadUsers(1);
+    }
+
+    // Reset modal on close
+    document.getElementById('addUserModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('userForm').reset();
+        document.getElementById('userId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add User';
+    });
+
+    // Initialize when DOM is ready
+    function initializeUsersPage() {
+        // Check authentication and load users
+        if (!getToken()) {
+            console.warn('No token found, redirecting to login');
+            window.location.href = '/login';
+        } else {
+            console.log('Token found, loading users...');
+            loadUsers();
+        }
+    }
+
+    // Run initialization when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeUsersPage);
+    } else {
+        // DOM is already ready
+        initializeUsersPage();
+    }
+</script>
+
+<%- include('partials/footer-layout') %>
+

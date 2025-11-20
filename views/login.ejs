@@ -1,0 +1,154 @@
+<%- include('partials/header', { title: 'Admin Login' }) %>
+
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                        <h2 class="mt-3">OgaBook Admin</h2>
+                        <p class="text-muted">Sign in to manage your database</p>
+                    </div>
+                    
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="Enter your email" required autocomplete="email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" placeholder="Enter your password" required autocomplete="current-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                        </button>
+                    </form>
+                    <div id="errorMessage" class="alert alert-danger d-none mt-3" role="alert"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Login function (defined before apiRequest to avoid dependency)
+    async function loginUser(email, password) {
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            // Check if response is JSON
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                throw new Error('Server returned invalid response. Please try again.');
+            }
+
+            if (!response.ok) {
+                const errorMsg = data.message || data.error || `Login failed (${response.status})`;
+                throw new Error(errorMsg);
+            }
+
+            if (data.success && data.token) {
+                localStorage.setItem('admin_token', data.token);
+                showToast('Login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 500);
+                return data;
+            } else {
+                throw new Error(data.message || 'Login failed - no token received');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            // Handle network errors
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Cannot connect to server. Please check if the server is running.');
+            }
+            throw error;
+        }
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast-alert');
+        existingToasts.forEach(toast => toast.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed top-0 end-0 m-3 toast-alert`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // Show error message in form
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('d-none');
+        setTimeout(() => {
+            errorDiv.classList.add('d-none');
+        }, 5000);
+    }
+
+    // Form submission handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        if (!email || !password) {
+            showToast('Please enter both email and password', 'error');
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in...';
+
+        try {
+            await loginUser(email, password);
+        } catch (error) {
+            showError(error.message || 'Login failed. Please check your credentials.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Login';
+        }
+    });
+
+    // Check if already logged in
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+        // Verify token is still valid
+        fetch('/api/auth/verify', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/dashboard';
+            } else {
+                localStorage.removeItem('admin_token');
+            }
+        })
+        .catch(() => {
+            localStorage.removeItem('admin_token');
+        });
+    }
+</script>
+
+<%- include('partials/footer') %>
+

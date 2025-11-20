@@ -1,0 +1,423 @@
+<%- include('partials/header', { title: 'Subscription - OgaBook' }) %>
+
+<style>
+    .subscription-container {
+        min-height: 100vh;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .subscription-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 700px;
+        width: 100%;
+        overflow: hidden;
+    }
+    .subscription-header {
+        background: #10b981;
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+    }
+    .logo-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+    .logo-wrapper img {
+        max-width: 120px;
+        max-height: 120px;
+        height: auto;
+        width: auto;
+        object-fit: contain;
+    }
+    .app-name {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+    .subscription-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    .subscription-body {
+        padding: 40px 30px;
+    }
+    .subscription-details {
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #d1fae5;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #166534;
+        font-size: 1rem;
+    }
+    .detail-value {
+        color: #15803d;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    .package-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .package-badge.basic {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    .package-badge.premium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .package-badge.enterprise {
+        background: #e9d5ff;
+        color: #6b21a8;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: capitalize;
+    }
+    .status-badge.active {
+        background: #d1fae5;
+        color: #166534;
+    }
+    .status-badge.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .billing-cycle {
+        text-transform: capitalize;
+        font-weight: 500;
+    }
+    .amount-display {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #10b981;
+    }
+    .currency {
+        font-size: 1.2rem;
+        color: #6b7280;
+        margin-right: 5px;
+    }
+    .proceed-button {
+        background: #10b981;
+        border: none;
+        border-radius: 12px;
+        padding: 18px 40px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .proceed-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        background: #059669;
+        color: white;
+    }
+    .proceed-button:active {
+        transform: translateY(0);
+    }
+    .proceed-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .info-box {
+        background: #eff6ff;
+        border-left: 4px solid #3b82f6;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .info-box p {
+        margin: 0;
+        color: #1e40af;
+        line-height: 1.6;
+    }
+</style>
+
+<div class="subscription-container">
+    <div class="subscription-card">
+        <div class="subscription-header">
+            <div class="logo-wrapper">
+                <img src="/assets/logo.png" alt="OgaBook Logo">
+            </div>
+            <div class="app-name">OgaBook</div>
+            <h1 class="subscription-title">Subscription Details</h1>
+        </div>
+        
+        <div class="subscription-body">
+            <div class="info-box">
+                <p>
+                    <i class="bi bi-info-circle me-2"></i>
+                    Please review your subscription details below and proceed to payment when ready.
+                </p>
+            </div>
+
+            <div class="subscription-details">
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-person me-2"></i>User ID
+                    </span>
+                    <span class="detail-value" id="userIdDisplay">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-envelope me-2"></i>Email
+                    </span>
+                    <span class="detail-value" id="emailDisplay">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-telephone me-2"></i>Phone
+                    </span>
+                    <span class="detail-value" id="phoneDisplay">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-box-seam me-2"></i>Package
+                    </span>
+                    <span class="detail-value">
+                        <span class="package-badge" id="packageBadge">-</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-calendar me-2"></i>Billing Cycle
+                    </span>
+                    <span class="detail-value billing-cycle" id="billingCycleDisplay">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-check-circle me-2"></i>Status
+                    </span>
+                    <span class="detail-value">
+                        <span class="status-badge" id="statusBadge">-</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">
+                        <i class="bi bi-currency-dollar me-2"></i>Amount
+                    </span>
+                    <span class="detail-value">
+                        <span class="amount-display">
+                            <span class="currency">₦</span><span id="amountDisplay">-</span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            
+            <button type="button" class="proceed-button" id="proceedButton">
+                <i class="bi bi-lock-fill"></i>
+                <span>Proceed to Payment</span>
+            </button>
+            
+            <div id="errorMessage" class="alert alert-danger d-none mt-3" role="alert">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                <span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Subscription data from server
+    const subscriptionData = <%- JSON.stringify({
+        userId: typeof userId !== 'undefined' ? userId : '',
+        userEmail: typeof userEmail !== 'undefined' ? userEmail : '',
+        userPhone: typeof userPhone !== 'undefined' ? userPhone : '',
+        status: typeof status !== 'undefined' ? status : '',
+        package: typeof package !== 'undefined' ? package : '',
+        billingCycle: typeof billingCycle !== 'undefined' ? billingCycle : '',
+        amount: typeof amount !== 'undefined' ? amount : ''
+    }) %>;
+
+    // Get URL parameters (fallback to URL if server data is empty)
+    function getUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return {
+            userId: subscriptionData.userId || urlParams.get('userId') || '',
+            userEmail: subscriptionData.userEmail || '',
+            userPhone: subscriptionData.userPhone || '',
+            status: subscriptionData.status || urlParams.get('status') || '',
+            package: subscriptionData.package || urlParams.get('package') || '',
+            billingCycle: subscriptionData.billingCycle || urlParams.get('billingCycle') || '',
+            amount: subscriptionData.amount || urlParams.get('amount') || ''
+        };
+    }
+
+    // Format package name
+    function formatPackageName(pkg) {
+        if (!pkg) return '-';
+        return pkg.charAt(0).toUpperCase() + pkg.slice(1);
+    }
+
+    // Format billing cycle
+    function formatBillingCycle(cycle) {
+        if (!cycle) return '-';
+        const cycles = {
+            'monthly': 'Monthly',
+            'quarterly': 'Quarterly',
+            'semi-annual': 'Semi-Annual',
+            'yearly': 'Yearly',
+            'annual': 'Annual'
+        };
+        return cycles[cycle.toLowerCase()] || cycle;
+    }
+
+    // Format amount
+    function formatAmount(amount) {
+        if (!amount) return '0.00';
+        const numAmount = parseFloat(amount);
+        return isNaN(numAmount) ? '0.00' : numAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Get package badge class
+    function getPackageBadgeClass(pkg) {
+        if (!pkg) return 'basic';
+        const pkgLower = pkg.toLowerCase();
+        if (pkgLower.includes('premium') || pkgLower.includes('pro')) return 'premium';
+        if (pkgLower.includes('enterprise')) return 'enterprise';
+        return 'basic';
+    }
+
+    // Display subscription details
+    function displaySubscriptionDetails() {
+        const params = getUrlParams();
+        
+        // Check if required parameters are present
+        if (!params.userId || !params.package || !params.amount) {
+            showError('Missing required subscription parameters. Please check the URL.');
+            document.getElementById('proceedButton').disabled = true;
+            return;
+        }
+
+        // Display values
+        document.getElementById('userIdDisplay').textContent = params.userId || '-';
+        document.getElementById('emailDisplay').textContent = params.userEmail || 'Not available';
+        document.getElementById('phoneDisplay').textContent = params.userPhone || 'Not available';
+        document.getElementById('packageBadge').textContent = formatPackageName(params.package);
+        document.getElementById('packageBadge').className = `package-badge ${getPackageBadgeClass(params.package)}`;
+        document.getElementById('billingCycleDisplay').textContent = formatBillingCycle(params.billingCycle);
+        document.getElementById('statusBadge').textContent = params.status || 'pending';
+        document.getElementById('statusBadge').className = `status-badge ${params.status === 'active' ? 'active' : 'inactive'}`;
+        document.getElementById('amountDisplay').textContent = formatAmount(params.amount);
+    }
+
+    // Show error message
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        const errorSpan = errorDiv.querySelector('span');
+        if (errorSpan) {
+            errorSpan.textContent = message;
+        } else {
+            errorDiv.textContent = message;
+        }
+        errorDiv.classList.remove('d-none');
+    }
+
+    // Handle proceed to payment
+    async function handleProceedToPayment() {
+        const params = getUrlParams();
+        
+        // Validate required parameters
+        if (!params.userId || !params.package || !params.amount) {
+            showError('Missing required subscription parameters. Cannot proceed to payment.');
+            return;
+        }
+
+        if (!params.userEmail) {
+            showError('User email is required for payment. Please ensure the user exists in the system.');
+            return;
+        }
+
+        // Disable button and show loading
+        const button = document.getElementById('proceedButton');
+        button.disabled = true;
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span><span>Initializing Payment...</span>';
+
+        try {
+            // Initialize Flutterwave payment
+            const response = await fetch('/api/payment/initialize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: params.userId,
+                    userEmail: params.userEmail,
+                    userPhone: params.userPhone || '',
+                    package: params.package,
+                    billingCycle: params.billingCycle || 'monthly',
+                    amount: params.amount,
+                    status: params.status || 'pending'
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.paymentLink) {
+                // Redirect to Flutterwave checkout
+                window.location.href = data.paymentLink;
+            } else {
+                throw new Error(data.message || 'Failed to initialize payment');
+            }
+        } catch (error) {
+            console.error('Payment initialization error:', error);
+            showError(error.message || 'Failed to initialize payment. Please try again.');
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        displaySubscriptionDetails();
+        
+        // Add click handler to proceed button
+        document.getElementById('proceedButton').addEventListener('click', handleProceedToPayment);
+    });
+</script>
+
+<%- include('partials/footer') %>
+
