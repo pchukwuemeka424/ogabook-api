@@ -18,27 +18,7 @@ A comprehensive admin panel for managing your Supabase database with Node.js and
 npm install
 ```
 
-2. Create a `.env` file in the root directory:
-```env
-# Supabase Configuration
-SUPABASE_URL=https://ldtayamrxisvypqzvldo.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Database Connection (PostgreSQL)
-DATABASE_URL=postgresql://postgres:Iz98HAD7jElqdiRk@db.ldtayamrxisvypqzvldo.supabase.co:5432/postgres
-
-# JWT Secret for Admin Authentication
-JWT_SECRET=your_jwt_secret_key_change_this_in_production
-
-# Admin Credentials (for initial setup)
-ADMIN_EMAIL=admin@ogabook.com
-ADMIN_PASSWORD=holiday100@
-
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-```
 
 3. Start the server:
 ```bash
