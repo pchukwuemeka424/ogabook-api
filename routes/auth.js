@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/supabase');
+const { pool, supabase } = require('../config/supabase');
 
 // Admin Login - Uses users table
 router.post('/login', async (req, res) => {
@@ -123,8 +123,10 @@ router.get('/verify', async (req, res) => {
 router.get('/user/email/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log(`[API] GET /api/auth/user/email/:userId - userId: ${userId}`);
 
     if (!userId) {
+      console.log('[API] User ID is missing');
       return res.status(400).json({
         success: false,
         message: 'User ID is required'
@@ -133,31 +135,81 @@ router.get('/user/email/:userId', async (req, res) => {
 
     // Try to fetch user email - handle both UUID and string ID formats
     let userResult;
+    let queryAttempt = 1;
+    let useSupabaseFallback = false;
+    
     try {
       // First try with the userId as-is (could be UUID or string)
+      console.log(`[API] Attempt ${queryAttempt}: Querying with id = $1`);
       userResult = await pool.query(
         'SELECT email, phone FROM users WHERE id = $1',
         [userId]
       );
+      console.log(`[API] Query ${queryAttempt} returned ${userResult.rows.length} rows`);
     } catch (idError) {
       // If that fails, try casting to text (for UUID compatibility)
-      console.log('First query attempt failed, trying text cast:', idError.message);
+      console.log(`[API] Query ${queryAttempt} failed:`, idError.message);
+      queryAttempt = 2;
       try {
+        console.log(`[API] Attempt ${queryAttempt}: Querying with id::text = $1`);
         userResult = await pool.query(
           'SELECT email, phone FROM users WHERE id::text = $1',
           [userId]
         );
+        console.log(`[API] Query ${queryAttempt} returned ${userResult.rows.length} rows`);
       } catch (textError) {
-        console.error('Error fetching user email:', textError);
+        console.error(`[API] Query ${queryAttempt} also failed:`, textError.message);
+        console.error('[API] Error stack:', textError.stack);
+        console.log('[API] Attempting Supabase client fallback...');
+        useSupabaseFallback = true;
+      }
+    }
+
+    // If pool query failed, try Supabase client as fallback
+    if (useSupabaseFallback) {
+      try {
+        console.log('[API] Using Supabase client to fetch user...');
+        const { data, error } = await supabase
+          .from('users')
+          .select('email, phone')
+          .eq('id', userId)
+          .single();
+        
+        if (error) {
+          console.error('[API] Supabase client error:', error);
+          return res.status(500).json({
+            success: false,
+            message: 'Error fetching user details',
+            error: error.message
+          });
+        }
+        
+        if (!data) {
+          console.log(`[API] No user found with Supabase client for userId: ${userId}`);
+          return res.status(404).json({
+            success: false,
+            message: 'User not found'
+          });
+        }
+        
+        console.log(`[API] User found via Supabase - email: ${data.email ? 'present' : 'missing'}, phone: ${data.phone ? 'present' : 'missing'}`);
+        return res.json({
+          success: true,
+          email: data.email || null,
+          phone: data.phone || null
+        });
+      } catch (supabaseError) {
+        console.error('[API] Supabase fallback also failed:', supabaseError);
         return res.status(500).json({
           success: false,
           message: 'Error fetching user details',
-          error: textError.message
+          error: supabaseError.message
         });
       }
     }
 
     if (userResult.rows.length === 0) {
+      console.log(`[API] No user found with userId: ${userId}`);
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -165,13 +217,16 @@ router.get('/user/email/:userId', async (req, res) => {
     }
 
     const user = userResult.rows[0];
+    console.log(`[API] User found - email: ${user.email ? 'present' : 'missing'}, phone: ${user.phone ? 'present' : 'missing'}`);
+    
     res.json({
       success: true,
       email: user.email || null,
       phone: user.phone || null
     });
   } catch (error) {
-    console.error('Error fetching user email:', error);
+    console.error('[API] Unexpected error fetching user email:', error);
+    console.error('[API] Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching user email',

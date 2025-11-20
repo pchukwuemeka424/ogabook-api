@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/supabase');
+const { pool, supabase } = require('../config/supabase');
 
 // Helper function to verify token from query or skip for web pages
 const optionalAuth = (req, res, next) => {
@@ -48,30 +48,68 @@ router.get('/', optionalAuth, async (req, res) => {
       // Fetch user details from database
       // Try to handle both UUID and string ID formats
       let userResult;
+      let useSupabaseFallback = false;
+      
       try {
         // First try with the userId as-is (could be UUID or string)
+        console.log(`[WEB] Attempting to fetch user with userId: ${userId}`);
         userResult = await pool.query(
           'SELECT id, email, phone FROM users WHERE id = $1',
           [userId]
         );
+        console.log(`[WEB] Pool query returned ${userResult.rows.length} rows`);
       } catch (idError) {
         // If that fails, try casting to text (for UUID compatibility)
-        console.log('First query attempt failed, trying text cast:', idError.message);
-        userResult = await pool.query(
-          'SELECT id, email, phone FROM users WHERE id::text = $1',
-          [userId]
-        );
+        console.log(`[WEB] First query attempt failed: ${idError.message}`);
+        try {
+          userResult = await pool.query(
+            'SELECT id, email, phone FROM users WHERE id::text = $1',
+            [userId]
+          );
+          console.log(`[WEB] Text cast query returned ${userResult.rows.length} rows`);
+        } catch (textError) {
+          console.error(`[WEB] Both pool queries failed: ${textError.message}`);
+          console.log(`[WEB] Attempting Supabase client fallback...`);
+          useSupabaseFallback = true;
+        }
       }
 
       let userEmail = '';
       let userPhone = '';
 
-      if (userResult.rows.length > 0) {
+      // If pool query failed, try Supabase client as fallback
+      if (useSupabaseFallback) {
+        try {
+          console.log('[WEB] Using Supabase client to fetch user...');
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, email, phone')
+            .eq('id', userId)
+            .single();
+          
+          if (error) {
+            console.error('[WEB] Supabase client error:', error);
+          } else if (data) {
+            userEmail = data.email || '';
+            userPhone = data.phone || '';
+            console.log(`[WEB] Successfully fetched user via Supabase for userId: ${userId}`);
+            console.log(`[WEB] Email: ${userEmail ? `"${userEmail}"` : 'MISSING'}`);
+            console.log(`[WEB] Phone: ${userPhone ? `"${userPhone}"` : 'MISSING'}`);
+          } else {
+            console.warn(`[WEB] No user found via Supabase with userId: ${userId}`);
+          }
+        } catch (supabaseError) {
+          console.error('[WEB] Supabase fallback also failed:', supabaseError);
+        }
+      } else if (userResult.rows.length > 0) {
         userEmail = userResult.rows[0].email || '';
         userPhone = userResult.rows[0].phone || '';
-        console.log(`Successfully fetched user details for userId: ${userId}, email: ${userEmail ? 'found' : 'missing'}`);
+        console.log(`[WEB] Successfully fetched user details for userId: ${userId}`);
+        console.log(`[WEB] Email: ${userEmail ? `"${userEmail}"` : 'MISSING'}`);
+        console.log(`[WEB] Phone: ${userPhone ? `"${userPhone}"` : 'MISSING'}`);
       } else {
-        console.warn(`No user found with userId: ${userId}`);
+        console.warn(`[WEB] No user found with userId: ${userId}`);
+        console.warn(`[WEB] Query returned 0 rows`);
       }
 
       // Render subscription page with parameters
@@ -86,9 +124,12 @@ router.get('/', optionalAuth, async (req, res) => {
         amount: amount
       });
     } catch (error) {
-      console.error('Error fetching user details:', error);
-      console.error('Error stack:', error.stack);
-      console.error('UserId that failed:', userId);
+      console.error('[WEB] Error fetching user details:', error);
+      console.error('[WEB] Error message:', error.message);
+      console.error('[WEB] Error stack:', error.stack);
+      console.error('[WEB] UserId that failed:', userId);
+      console.error('[WEB] Error code:', error.code);
+      console.error('[WEB] Error detail:', error.detail);
       // Still render the page even if user fetch fails
       // Client-side will attempt to fetch email as fallback
       res.render('subscription', {

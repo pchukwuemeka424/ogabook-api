@@ -322,18 +322,45 @@
 
     // Fetch user email from API if missing
     async function fetchUserEmail(userId) {
-        if (!userId) return null;
+        if (!userId) {
+            console.log('fetchUserEmail: No userId provided');
+            return null;
+        }
+        
+        console.log('fetchUserEmail: Attempting to fetch email for userId:', userId);
+        const apiUrl = `/api/auth/user/email/${encodeURIComponent(userId)}`;
+        console.log('fetchUserEmail: API URL:', apiUrl);
         
         try {
-            const response = await fetch(`/api/auth/user/email/${encodeURIComponent(userId)}`);
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('fetchUserEmail: Response status:', response.status);
+            console.log('fetchUserEmail: Response ok:', response.ok);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('fetchUserEmail: Response data:', data);
                 if (data.success && data.email) {
+                    console.log('fetchUserEmail: Successfully fetched email:', data.email);
                     return data.email;
+                } else {
+                    console.warn('fetchUserEmail: Response successful but no email found:', data);
                 }
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                console.error('fetchUserEmail: API error response:', response.status, errorData);
             }
         } catch (error) {
-            console.error('Error fetching user email:', error);
+            console.error('fetchUserEmail: Network or parsing error:', error);
+            console.error('fetchUserEmail: Error details:', {
+                message: error.message,
+                stack: error.stack
+            });
         }
         return null;
     }
@@ -341,6 +368,8 @@
     // Display subscription details
     async function displaySubscriptionDetails() {
         const params = getUrlParams();
+        console.log('displaySubscriptionDetails: Initial params:', params);
+        console.log('displaySubscriptionDetails: subscriptionData from server:', subscriptionData);
         
         // Check if required parameters are present
         if (!params.userId || !params.package || !params.amount) {
@@ -356,14 +385,23 @@
         let displayEmail = params.userEmail;
         let displayPhone = params.userPhone;
         
+        console.log('displaySubscriptionDetails: Initial email from params:', displayEmail);
+        console.log('displaySubscriptionDetails: Initial email from subscriptionData:', subscriptionData.userEmail);
+        
         if (!displayEmail) {
+            console.log('displaySubscriptionDetails: Email is missing, attempting to fetch...');
             document.getElementById('emailDisplay').textContent = 'Loading...';
             const fetchedEmail = await fetchUserEmail(params.userId);
             if (fetchedEmail) {
                 displayEmail = fetchedEmail;
                 // Update subscriptionData for later use
                 subscriptionData.userEmail = fetchedEmail;
+                console.log('displaySubscriptionDetails: Successfully fetched and set email:', fetchedEmail);
+            } else {
+                console.warn('displaySubscriptionDetails: Failed to fetch email, will show "Not available"');
             }
+        } else {
+            console.log('displaySubscriptionDetails: Email already available:', displayEmail);
         }
         
         document.getElementById('emailDisplay').textContent = displayEmail || 'Not available';
